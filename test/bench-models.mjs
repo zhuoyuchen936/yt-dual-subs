@@ -6,6 +6,9 @@
 //   anything else -> one numbered batch per clip with a system prompt
 // The clips are written for this repo. They lean on what makes subtitles hard: spoken idioms,
 // references that only make sense with the previous line, and unpunctuated speech recognition.
+// With GPU=1 (macOS) each model also runs the clips in a loop for ~10 s while GPU utilisation is sampled,
+// giving "GPU-seconds per 100 sentences": how much of the GPU a model really costs, not just how long it takes.
+import { execFile } from 'node:child_process';
 await import('../src/translate-core.js');
 const { buildTranslatePrompt, parseNumbered, isMtModel, MT_SAMPLING, buildMtPrompt, cleanMtOutput } = globalThis.YDS;
 
@@ -95,6 +98,57 @@ for (const model of models) {
   const zh = [];
   for (const clip of CLIPS) zh.push(...(await STRATEGIES[strategy](model, clip)));
   results[model] = { strategy, ms: Date.now() - t0, zh };
+}
+
+// ---- optional: sustained GPU load (macOS, no sudo needed) ----
+
+const gpuUtil = () =>
+  new Promise((resolve) =>
+    execFile('ioreg', ['-r', '-d', '1', '-c', 'IOAccelerator'], { maxBuffer: 1 << 22 }, (err, out) => {
+      const m = !err && /"Device Utilization %"=(\d+)/.exec(out);
+      resolve(m ? Number(m[1]) : null);
+    })
+  );
+
+async function sustained(model, strategy, seconds) {
+  const samples = [];
+  let sampling = true;
+  const sampler = (async () => {
+    while (sampling) {
+      const u = await gpuUtil();
+      if (u != null) samples.push(u);
+      await new Promise((r) => setTimeout(r, 200));
+    }
+  })();
+  const t0 = Date.now();
+  let sentences = 0;
+  while (Date.now() - t0 < seconds * 1000) {
+    for (const clip of CLIPS) {
+      await STRATEGIES[strategy](model, clip);
+      sentences += clip.lines.length;
+    }
+  }
+  const elapsed = (Date.now() - t0) / 1000;
+  sampling = false;
+  await sampler;
+  const avg = samples.reduce((a, b) => a + b, 0) / Math.max(1, samples.length);
+  return { sentences, elapsed, avg, peak: Math.max(0, ...samples), gpuSecPer100: ((avg / 100) * elapsed * 100) / sentences };
+}
+
+if (process.env.GPU) {
+  const idle = [];
+  for (let k = 0; k < 8; k++) { idle.push(await gpuUtil()); await new Promise((r) => setTimeout(r, 200)); }
+  console.log(`GPU idle baseline: ${(idle.reduce((a, b) => a + b, 0) / idle.length).toFixed(0)} %`);
+  for (const model of models) {
+    const strategy = results[model].strategy;
+    await STRATEGIES[strategy](model, { title: 'warm-up', lines: ['Hello there.'] });
+    const r = await sustained(model, strategy, Number(process.env.GPU) > 1 ? Number(process.env.GPU) : 10);
+    console.log(
+      `${model}: ${(r.sentences / r.elapsed).toFixed(1)} sentences/s, GPU avg ${r.avg.toFixed(0)} % (peak ${r.peak} %), ` +
+        `${r.gpuSecPer100.toFixed(1)} GPU-seconds per 100 sentences`
+    );
+  }
+  console.log('');
 }
 
 const total = CLIPS.reduce((a, c) => a + c.lines.length, 0);

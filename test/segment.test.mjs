@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { manualJson3, asrJson3 } from './helpers.mjs';
 await import('../src/segment.js');
 await import('../src/translate-core.js');
-const { parseJson3, indexAt, parseNumbered, buildTranslatePrompt, isMtModel, buildMtPrompt, buildMtLookupPrompt, cleanMtOutput } = globalThis.YDS;
+const { parseJson3, indexAt, parseNumbered, buildTranslatePrompt, autoPickModel, isMtModel, buildMtPrompt, buildMtLookupPrompt, cleanMtOutput } = globalThis.YDS;
 
 const checkTimeline = (cues) => {
   cues.forEach((c, k) => {
@@ -131,4 +131,16 @@ test('cleanMtOutput flattens the reply to one subtitle line', () => {
   assert.equal(cleanMtOutput(' 这是一辆\n自行车。 \n'), '这是一辆 自行车。');
   assert.equal(cleanMtOutput('译文：你好'), '你好');
   assert.equal(cleanMtOutput(null), '');
+});
+
+test('auto model choice: loaded first, then the smallest translation model, then the first listed', () => {
+  const list = (...ids) => ids.map((id) => ({ id, loaded: false }));
+  // LM Studio lists newest downloads first, so order must not matter
+  assert.equal(autoPickModel(list('hy-mt2-7b', 'hy-mt2-1.8b', 'qwen/qwen3.6-35b-a3b')).id, 'hy-mt2-1.8b');
+  assert.equal(autoPickModel(list('tencent/Hy-MT2-30B-A3B', 'hy-mt2-7b')).id, 'hy-mt2-7b');
+  assert.equal(autoPickModel(list('qwen/qwen3.8-27b', 'gemma-3-4b')).id, 'qwen/qwen3.8-27b');
+  const loaded = list('hy-mt2-1.8b', 'qwen/qwen3.6-35b-a3b');
+  loaded[1].loaded = true;
+  assert.equal(autoPickModel(loaded).id, 'qwen/qwen3.6-35b-a3b');
+  assert.equal(autoPickModel([]), undefined);
 });

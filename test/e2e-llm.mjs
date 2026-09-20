@@ -1,5 +1,5 @@
 // End-to-end check of the real service worker code against a running local model server.
-//   node test/e2e-llm.mjs            (needs LM Studio's server on :1234 with a model loaded)
+//   node test/e2e-llm.mjs            (needs LM Studio's server on :1234; MODEL=<id> picks a model, else auto)
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { manualJson3, asrJson3 } from './helpers.mjs';
@@ -7,7 +7,7 @@ import { manualJson3, asrJson3 } from './helpers.mjs';
 const src = (f) => fs.readFileSync(new URL(`../src/${f}`, import.meta.url), 'utf8');
 let handler;
 globalThis.chrome = {
-  storage: { local: { get: async () => ({}), set: async () => {} }, onChanged: { addListener() {} } },
+  storage: { local: { get: async () => (process.env.MODEL ? { settings: { model: process.env.MODEL } } : {}), set: async () => {} }, onChanged: { addListener() {} } },
   runtime: { onMessage: { addListener: (fn) => (handler = fn) } }
 };
 globalThis.importScripts = (...files) => files.forEach((f) => vm.runInThisContext(src(f), { filename: f }));

@@ -2,7 +2,7 @@
 // http://localhost are covered by host_permissions and never hit CORS / mixed-content checks.
 importScripts('defaults.js', 'translate-core.js');
 
-const { getSettings, buildTranslatePrompt, parseNumbered, isMtModel, MT_SAMPLING, buildMtPrompt, buildMtLookupPrompt, cleanMtOutput } =
+const { getSettings, buildTranslatePrompt, parseNumbered, isMtModel, autoPickModel, MT_SAMPLING, buildMtPrompt, buildMtLookupPrompt, cleanMtOutput } =
   globalThis.YDS;
 
 // ---- model discovery ----
@@ -26,17 +26,13 @@ async function listModels(apiBase) {
   return (j.data || []).filter((m) => !/embed/i.test(m.id)).map((m) => ({ id: m.id, loaded: false }));
 }
 
-// Whatever is already in memory costs nothing extra; otherwise a small translation model beats
-// loading a general-purpose one.
-const autoPick = (models) => models.find((m) => m.loaded) || models.find((m) => isMtModel(m.id)) || models[0];
-
 async function resolveModel(settings) {
   if (settings.model) return settings.model;
   const key = settings.apiBase;
   if (modelCache.key === key && modelCache.id && Date.now() - modelCache.ts < 60000) return modelCache.id;
   const models = await listModels(settings.apiBase);
   if (!models.length) throw new Error('本地服务里没有可用的模型');
-  const pick = autoPick(models);
+  const pick = autoPickModel(models);
   modelCache = { key, id: pick.id, ts: Date.now() };
   return pick.id;
 }
@@ -59,6 +55,12 @@ async function chat(settings, model, messages, maxTokens, sampling) {
   if (res.status === 400 && body.reasoning_effort) {
     reasoningParamRejected = true;
     delete body.reasoning_effort;
+    res = await post();
+  }
+  // While LM Studio is loading a model on demand, requests that arrive alongside the one that
+  // triggered the load are turned away with an immediate 500. Give it a moment and ask again.
+  if (res.status >= 500) {
+    await new Promise((r) => setTimeout(r, 1500));
     res = await post();
   }
   if (!res.ok) {
@@ -107,19 +109,22 @@ async function translateMt(settings, model, req) {
   const zh = new Array(req.lines.length).fill(null);
   let next = 0;
   let firstError = null;
-  const worker = async () => {
-    while (next < req.lines.length) {
-      const k = next++;
-      const context = [...(req.before || []), ...req.lines.slice(0, k)].slice(-2);
-      const messages = buildMtPrompt(settings, { title: req.title, context, text: req.lines[k] });
-      try {
-        zh[k] = cleanMtOutput(await chat(settings, model, messages, 200 + req.lines[k].length * 2, MT_SAMPLING)) || null;
-      } catch (e) {
-        firstError = firstError || e;
-      }
+  const one = async (k) => {
+    const context = [...(req.before || []), ...req.lines.slice(0, k)].slice(-2);
+    const messages = buildMtPrompt(settings, { title: req.title, context, text: req.lines[k] });
+    try {
+      zh[k] = cleanMtOutput(await chat(settings, model, messages, 200 + req.lines[k].length * 2, MT_SAMPLING)) || null;
+    } catch (e) {
+      firstError = firstError || e;
     }
   };
-  await Promise.all(Array.from({ length: Math.min(MT_CONCURRENCY, req.lines.length) }, worker));
+  const worker = async () => {
+    while (next < req.lines.length) await one(next++);
+  };
+  // The first sentence goes alone: if the model was unloaded (idle TTL), this request blocks until
+  // it is back in memory, and only then do the rest fan out. See the 500 note in chat().
+  await one(next++);
+  await Promise.all(Array.from({ length: Math.min(MT_CONCURRENCY, req.lines.length - 1) }, worker));
   if (firstError && zh.every((z) => z == null)) throw firstError;
   return zh;
 }
@@ -169,7 +174,7 @@ async function serverStatus() {
   const settings = await getSettings();
   try {
     const models = await listModels(settings.apiBase);
-    const active = settings.model || (autoPick(models) || {}).id || '';
+    const active = settings.model || (autoPickModel(models) || {}).id || '';
     return { connected: true, models, active, mt: usesMtPrompts(settings, active) };
   } catch (e) {
     return { connected: false, error: String(e.message || e), models: [], active: '' };

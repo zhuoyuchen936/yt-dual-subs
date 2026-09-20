@@ -47,6 +47,19 @@
 
   const isMtModel = (id) => /hy-?mt|hunyuan-?mt/i.test(String(id || ''));
 
+  // Parameter count in billions as written in the model id ("hy-mt2-1.8b" -> 1.8), or Infinity.
+  function paramsFromId(id) {
+    const m = /(\d+(?:\.\d+)?)b(?![a-z])/i.exec(String(id || ''));
+    return m ? Number(m[1]) : Infinity;
+  }
+
+  // Which model to use when the user has not chosen one: whatever is already in memory costs nothing
+  // extra; otherwise the smallest dedicated translation model; otherwise the first model listed.
+  function autoPickModel(models) {
+    const mt = models.filter((m) => isMtModel(m.id)).sort((a, b) => paramsFromId(a.id) - paramsFromId(b.id));
+    return models.find((m) => m.loaded) || mt[0] || models[0];
+  }
+
   // The vendor's recommended sampling (llama.cpp / LM Studio parameter names).
   const MT_SAMPLING = { temperature: 0.7, top_p: 0.6, top_k: 20, repeat_penalty: 1.05 };
 
@@ -79,6 +92,7 @@
     buildTranslatePrompt,
     parseNumbered,
     isMtModel,
+    autoPickModel,
     MT_SAMPLING,
     buildMtPrompt,
     buildMtLookupPrompt,
