@@ -7,6 +7,7 @@
   "scripts": {
     "test": "node --test test/segment.test.mjs",
     "test:llm": "node test/e2e-llm.mjs",
+    "bench": "node test/bench-models.mjs",
     "harness": "node test/harness/server.mjs",
     "icons": "node scripts/make-icons.mjs"
   }

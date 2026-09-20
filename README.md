@@ -60,6 +60,26 @@ YouTube 播放器 ──请求字幕──▶ /api/timedtext?…&pot=令牌
 - **翻译专用模型**：这类小模型只在少数几种提示词格式上训练过，也没有系统提示词。所以用官方的「背景信息 + 待翻译文本」模板，一次一句，把视频标题和前两句作为背景；采样参数用官方推荐值。
 
 想两头兼顾：翻译用 `hy-mt2-1.8b`，「查词用的模型」选一个通用模型——只有点词时才会把它加载进来，闲置后又会卸载。
+注意 LM Studio 默认同一时间只保留一个按需加载的模型（Developer → Server Settings → *Auto-Evict for JIT loaded models*），
+两个模型会互相顶掉、每次切换都要重新加载；要这样搭配就把这个选项关掉。
+
+#### 小模型的代价，以及为什么不用 MiLMMT
+
+用一组口语化的测试句实测（完整的 15 句并排结果和分析见 [docs/model-comparison.md](docs/model-comparison.md)）：
+
+| | qwen3.6-35b-a3b | hy-mt2-1.8b | milmmt-46-1b |
+| --- | --- | --- | --- |
+| 常驻内存 / 15 句耗时 | 约 19 GB / 3.1 秒 | 约 2.4 GB / 0.9 秒 | 约 1.2 GB / 0.9 秒 |
+| If anything **blows up**, don't panic… | 如果出了什么问题 | 如果有什么东西**爆炸了** | 如果情况变得很糟糕 |
+| …we're pretty much **good to go**. | 基本就可以出锅了 | 差不多**可以开始了** | 基本上就没问题了 |
+| …clean it up before you **push**. | 在推送之前 | 在推送之前 | 在**推车**前 |
+| **Day-old rice** is the secret here… | 隔夜饭是这里的关键 | 秘诀在于使用隔夜米饭 | 秘诀在于**新鲜的**日粮米 |
+
+- **Hy-MT2-1.8B 的短板是习语和短语动词。** 试过它官方的四种提示词模板各两次，*blows up* 八次全部直译成「爆炸了」——这是模型能力上限，换提示词救不回来。
+- **不用 [MiLMMT-46](https://huggingface.co/xiaomi-research/MiLMMT-46-1B-v1.0)**（小米，2026-08，比 Hy-MT2 更新更小）：它只有单句的补全式提示词，
+  没有地方放上文和视频标题，而字幕恰恰是离了上下文就没法翻的碎句。实测里 *push* 成了「推车」、*branch* 成了「枝干」、
+  *day-old rice* 成了「新鲜的米」（意思反了）——这类错误学习者对照英文也发现不了。它只比 Hy-MT2 省约 1.2 GB 内存，速度相同，不值得。
+  论文里它的领先来自"无参考质量评估"分数，而它的强化学习正是拿这类评估器当奖励训练的，不能直接当作实际质量的证据。
 
 ### 降低硬件压力
 
@@ -92,6 +112,7 @@ YouTube 播放器 ──请求字幕──▶ /api/timedtext?…&pot=令牌
 ```bash
 npm test            # 分句 / 解析的单元测试（样本按 YouTube json3 字幕的真实结构编写）
 npm run test:llm    # 用真实的 service worker 代码对本地模型跑一遍翻译和查词
+npm run bench -- hy-mt2-1.8b qwen/qwen3.6-35b-a3b   # 多个模型的译文并排对比 + 计时
 npm run harness     # http://localhost:8800/watch?v=demo0000001 —— 模拟播放器页面，加载未修改的扩展源码
 ```
 

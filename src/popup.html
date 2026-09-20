@@ -238,7 +238,7 @@
         <span>查词用的模型</span>
         <select data-key="lookupModel"><option value="">与翻译相同</option></select>
       </label>
-      <div class="hint">翻译专用模型查词只能给出“在本句中的译法”；想要音标和用法，就在这里选一个通用模型（用到时才加载）。</div>
+      <div class="hint">翻译专用模型查词只能给出“在本句中的译法”；想要音标和用法，就在这里选一个通用模型（用到时才加载；需在 LM Studio 的 Server Settings 里关掉 Auto-Evict，否则两个模型会互相顶掉）。</div>
       <label class="field"><span>目标语言</span><input type="text" data-key="targetLang" /></label>
       <label class="row" style="margin-top: 8px">
         <span>优先人工字幕<small>没有时才用自动生成的字幕</small></span>
