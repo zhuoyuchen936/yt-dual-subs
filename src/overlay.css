@@ -1,0 +1,141 @@
+/* Our overlay replaces the native captions while it is active. */
+html.yds-active .ytp-caption-window-container {
+  display: none !important;
+}
+
+#yds-root {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  --yds-h: 720px;
+  --yds-scale: 1;
+  --yds-bottom: 4%;
+  font-family: 'YouTube Noto', Roboto, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+}
+
+#yds-root [hidden] {
+  display: none !important;
+}
+
+/* A fixed offset above the control bar: if the box moved when the controls appear, hover-to-pause
+   would slide it out from under the pointer and flicker. */
+#yds-root .yds-box {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--yds-bottom) + 56px);
+  transform: translateX(-50%);
+  max-width: 86%;
+  width: max-content;
+  padding: 0.35em 0.8em 0.45em;
+  border-radius: 8px;
+  background: rgba(8, 8, 8, 0.72);
+  text-align: center;
+  pointer-events: auto;
+  cursor: default;
+  font-size: max(13px, calc(var(--yds-h) * 0.036 * var(--yds-scale)));
+  line-height: 1.35;
+}
+
+#yds-root .yds-en {
+  color: #fff;
+  font-weight: 500;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+#yds-root .yds-zh {
+  margin-top: 0.15em;
+  color: #ffe2a0;
+  font-size: 0.92em;
+  transition: filter 0.15s;
+}
+
+#yds-root .yds-zh.yds-wait {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+#yds-root.yds-hide-en .yds-en,
+#yds-root.yds-hide-zh .yds-zh {
+  display: none;
+}
+
+#yds-root.yds-blur-zh .yds-zh {
+  filter: blur(0.32em);
+}
+
+#yds-root.yds-blur-zh .yds-box:hover .yds-zh {
+  filter: none;
+}
+
+#yds-root .yds-w {
+  border-radius: 3px;
+  cursor: pointer;
+  transition: color 0.12s;
+}
+
+#yds-root .yds-w:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+#yds-root .yds-w.yds-cur {
+  color: #8fd6ff;
+}
+
+#yds-root .yds-status {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(8, 8, 8, 0.6);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+#yds-root .yds-status[data-kind='error'] {
+  background: rgba(150, 28, 28, 0.88);
+  color: #fff;
+}
+
+#yds-root .yds-status[data-kind='warn'] {
+  background: rgba(120, 84, 10, 0.88);
+  color: #fff;
+}
+
+#yds-root .yds-status[data-kind='toast'] {
+  background: rgba(8, 8, 8, 0.85);
+  color: #fff;
+  font-size: 13px;
+}
+
+#yds-root .yds-pop {
+  position: absolute;
+  width: min(340px, 80%);
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(24, 24, 27, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+  color: #eee;
+  font-size: 14px;
+  line-height: 1.55;
+  text-align: left;
+  pointer-events: auto;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+#yds-root .yds-pop-head {
+  margin-bottom: 4px;
+  color: #8fd6ff;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+#yds-root .yds-pop-body {
+  white-space: pre-wrap;
+}

@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>YT Dual Subs harness</title>
+    <link rel="stylesheet" href="/src/overlay.css" />
+    <style>
+      body { margin: 0; background: #0f0f0f; color: #ccc; font: 13px system-ui; }
+      #movie_player { position: relative; width: 960px; height: 540px; margin: 16px auto; background: linear-gradient(135deg, #1e293b, #334155); overflow: hidden; }
+      #movie_player video { width: 100%; height: 100%; }
+      .ytp-caption-window-container { position: absolute; bottom: 60px; width: 100%; text-align: center; color: #fff; }
+      #bar { width: 960px; margin: 0 auto; display: flex; gap: 8px; align-items: center; }
+    </style>
+    <script src="/test/harness/chrome-shim.js"></script>
+    <script src="/src/inject.js"></script>
+  </head>
+  <body>
+    <div id="movie_player" class="html5-video-player">
+      <video class="html5-main-video"></video>
+      <div class="ytp-caption-window-container">native captions (should be hidden while active)</div>
+    </div>
+    <div id="bar">
+      <button id="toggle">play / pause</button><span id="clock"></span>
+      <input id="typing" placeholder="hotkeys must not fire while typing here" />
+    </div>
+    <script>
+      // ---- fake player: the API surface inject.js relies on ----
+      const videoId = new URLSearchParams(location.search).get('v');
+      const kind = new URLSearchParams(location.search).get('only') === 'asr' ? ['asr'] : ['', 'asr'];
+      const player = document.getElementById('movie_player');
+      const base = (k) => `/api/timedtext?v=${videoId}&lang=en${k ? '&kind=asr' : ''}&signature=abc&expire=1`;
+      let current = {};
+      window.__timedtextRequests = [];
+      player.getPlayerResponse = () => ({
+        videoDetails: { videoId, title: 'Why does a bicycle stay upright?' },
+        captions: { playerCaptionsTracklistRenderer: { captionTracks: kind.map((k) => ({ baseUrl: base(k), languageCode: 'en', kind: k || undefined, vssId: (k ? 'a.' : '.') + 'en', name: { simpleText: k ? 'English (auto-generated)' : 'English' } })) } }
+      });
+      player.loadModule = () => {};
+      player.getOption = (_m, what) => (what === 'tracklist' ? kind.map((k) => ({ languageCode: 'en', kind: k, vss_id: (k ? 'a.' : '.') + 'en' })) : current);
+      player.setOption = (_m, _w, track) => {
+        current = track || {};
+        if (!current.languageCode) return;
+        // Like the real player: fetch the track with a pot token, as json3, over XHR.
+        const url = `${base(current.kind)}&potc=1&pot=TESTPOT&fmt=json3&c=WEB`;
+        window.__timedtextRequests.push(url);
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', url);
+        xhr.send();
+      };
+
+      // ---- a playable "video": 120 s of silence ----
+      const seconds = 120, rate = 8000;
+      const wav = new Uint8Array(44 + seconds * rate).fill(128);
+      const dv = new DataView(wav.buffer);
+      const str = (o, s) => [...s].forEach((ch, k) => dv.setUint8(o + k, ch.charCodeAt(0)));
+      str(0, 'RIFF'); dv.setUint32(4, 36 + seconds * rate, true); str(8, 'WAVEfmt '); dv.setUint32(16, 16, true);
+      dv.setUint16(20, 1, true); dv.setUint16(22, 1, true); dv.setUint32(24, rate, true); dv.setUint32(28, rate, true);
+      dv.setUint16(32, 1, true); dv.setUint16(34, 8, true); str(36, 'data'); dv.setUint32(40, seconds * rate, true);
+      const video = document.querySelector('video');
+      video.src = URL.createObjectURL(new Blob([wav], { type: 'audio/wav' }));
+      document.getElementById('toggle').onclick = () => (video.paused ? video.play() : video.pause());
+      setInterval(() => (document.getElementById('clock').textContent = video.currentTime.toFixed(1) + ' s' + (video.paused ? ' (paused)' : '')), 100);
+      // The real player toggles playback when the player area is clicked; the overlay must not trigger it.
+      window.__playerClicks = 0;
+      player.addEventListener('click', () => window.__playerClicks++);
+    </script>
+    <script src="/src/defaults.js"></script>
+    <script src="/src/translate-core.js"></script>
+    <script src="/src/background.js"></script>
+    <script src="/src/segment.js"></script>
+    <script src="/src/content.js"></script>
+  </body>
+</html>

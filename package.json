@@ -1,0 +1,13 @@
+{
+  "name": "yt-dual-subs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chrome extension: bilingual YouTube subtitles translated by a local LLM",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/segment.test.mjs",
+    "test:llm": "node test/e2e-llm.mjs",
+    "harness": "node test/harness/server.mjs",
+    "icons": "node scripts/make-icons.mjs"
+  }
+}

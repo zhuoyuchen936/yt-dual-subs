@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>YT Dual Subs</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #fafafa;
+        --fg: #18181b;
+        --muted: #6b6b76;
+        --line: #e4e4e7;
+        --card: #fff;
+        --accent: #2563eb;
+        --ok: #16a34a;
+        --bad: #dc2626;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #18181b;
+          --fg: #f4f4f5;
+          --muted: #a1a1aa;
+          --line: #34343a;
+          --card: #222226;
+          --accent: #60a5fa;
+          --ok: #4ade80;
+          --bad: #f87171;
+        }
+      }
+      body {
+        margin: 0;
+        width: 360px;
+        background: var(--bg);
+        color: var(--fg);
+        font: 13px/1.5 -apple-system, 'PingFang SC', 'Segoe UI', sans-serif;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 14px 8px;
+      }
+      header h1 {
+        margin: 0;
+        font-size: 15px;
+      }
+      section {
+        margin: 0 10px 10px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--card);
+      }
+      section h2 {
+        margin: 0 0 6px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-height: 28px;
+        padding: 3px 0;
+      }
+      .row > span small {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        margin-right: 6px;
+        border-radius: 50%;
+        background: var(--muted);
+      }
+      .dot.ok {
+        background: var(--ok);
+      }
+      .dot.bad {
+        background: var(--bad);
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .err {
+        color: var(--bad);
+      }
+      progress {
+        width: 100%;
+        height: 6px;
+        margin-top: 6px;
+      }
+      input[type='text'],
+      select,
+      textarea {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 5px 7px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--bg);
+        color: var(--fg);
+        font: inherit;
+      }
+      textarea {
+        resize: vertical;
+        min-height: 40px;
+      }
+      label.field {
+        display: block;
+        margin-top: 8px;
+      }
+      label.field > span {
+        display: block;
+        margin-bottom: 3px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      input[type='range'] {
+        width: 150px;
+      }
+      input[type='checkbox'] {
+        width: 16px;
+        height: 16px;
+        accent-color: var(--accent);
+      }
+      button {
+        padding: 5px 10px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--bg);
+        color: var(--fg);
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      kbd {
+        padding: 0 5px;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        background: var(--bg);
+        font: 11px ui-monospace, monospace;
+      }
+      .keys {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 3px 10px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>YT Dual Subs</h1>
+      <label class="row"><span class="muted">启用</span><input type="checkbox" data-key="enabled" /></label>
+    </header>
+
+    <section>
+      <h2>状态</h2>
+      <div id="server"><span class="dot"></span>检查本地模型服务…</div>
+      <div id="video" class="muted" style="margin-top: 6px">—</div>
+      <progress id="bar" value="0" max="1" hidden></progress>
+      <div class="row" style="margin-top: 6px">
+        <span></span>
+        <button id="retranslate" hidden>重新翻译此视频</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>显示</h2>
+      <label class="row"><span>英文</span><input type="checkbox" data-key="showEn" /></label>
+      <label class="row"><span>中文</span><input type="checkbox" data-key="showZh" /></label>
+      <label class="row">
+        <span>遮住中文<small>鼠标移上去才显示，先自己理解一遍</small></span>
+        <input type="checkbox" data-key="zhBlur" />
+      </label>
+      <label class="row">
+        <span>逐词高亮<small>仅自动生成的字幕有逐词时间</small></span>
+        <input type="checkbox" data-key="karaoke" />
+      </label>
+      <label class="row"><span>字号</span><input type="range" min="0.6" max="1.8" step="0.05" data-key="fontScale" /></label>
+      <label class="row"><span>高度</span><input type="range" min="0" max="60" step="1" data-key="bottomPct" /></label>
+      <label class="row"><span>左上角进度提示</span><input type="checkbox" data-key="showStatus" /></label>
+    </section>
+
+    <section>
+      <h2>学习</h2>
+      <label class="row">
+        <span>悬停暂停<small>鼠标移到字幕上自动暂停，点单词查释义</small></span>
+        <input type="checkbox" data-key="hoverPause" />
+      </label>
+      <label class="row">
+        <span>句末自动暂停<small>每句停一下，适合跟读</small></span>
+        <input type="checkbox" data-key="autoPause" />
+      </label>
+      <label class="row"><span>快捷键</span><input type="checkbox" data-key="hotkeys" /></label>
+      <div class="keys">
+        <span><kbd>A</kbd> / <kbd>D</kbd></span><span>上一句 / 下一句</span>
+        <span><kbd>S</kbd></span><span>重听当前句</span>
+        <span><kbd>Z</kbd></span><span>遮住 / 显示中文</span>
+        <span><kbd>P</kbd></span><span>句末自动暂停 开 / 关</span>
+      </div>
+    </section>
+
+    <section>
+      <h2>翻译</h2>
+      <label class="field"><span>本地模型服务地址（OpenAI 兼容）</span><input type="text" data-key="apiBase" spellcheck="false" /></label>
+      <label class="field">
+        <span>模型</span>
+        <select data-key="model"><option value="">自动（优先已加载的模型）</option></select>
+      </label>
+      <label class="field"><span>目标语言</span><input type="text" data-key="targetLang" /></label>
+      <label class="row" style="margin-top: 8px">
+        <span>优先人工字幕<small>没有时才用自动生成的字幕</small></span>
+        <input type="checkbox" data-key="preferManual" />
+      </label>
+      <label class="row">
+        <span>合并成整句<small>把被切碎的人工字幕拼回完整句子再翻译</small></span>
+        <input type="checkbox" data-key="mergeSentences" />
+      </label>
+      <label class="row"><span>每批句数</span><input type="range" min="4" max="24" step="1" data-key="batchSize" /></label>
+      <label class="field">
+        <span>给翻译的补充要求（可选）</span>
+        <textarea data-key="extraPrompt" placeholder="例如：这是机器学习课程，术语按学界惯例翻译"></textarea>
+      </label>
+      <div class="row" style="margin-top: 8px">
+        <span id="cacheInfo" class="muted"></span>
+        <button id="clearCache">清空翻译缓存</button>
+      </div>
+    </section>
+
+    <script src="defaults.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

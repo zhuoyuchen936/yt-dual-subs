@@ -1,0 +1,22 @@
+0|2510|[Music]@0
+4400|4159|This@0 is@399 a@560 bicycle.@800 It's@1520 surprisingly@1680 simple@2240
+6879|4561|and@0 built@241 from@561 only@801 a@960 few@1441
+8559|4960|parts@0 like@481 wheels@801 and@1441 pedals.@1841 But@2561 your@2641
+11440|3920|body@0 has@239 no@400 trouble@640 keeping@960 it@1520 up@1680 and@1920
+13519|3840|rolling.@0 And@641 I@801 want@1040 you@1120 to@1280 take@1361 a@1521 moment@1681
+15360|4480|to@0 notice@239 how@880 strange@1200 it@1440 is@1679 that@1759
+17359|4561|people@0 can@401 do@561 this@721 so@961 effortlessly.@1201 I@2241
+19840|4320|mean@0 children,@160 couriers,@560 and@800 racers@1040 can@1439 all@1680
+21920|4880|stay@0 upright@640 somehow.@880 Even@1519 though@1760 the@1920
+24160|4640|exact@0 speed@560 of@959 each@1199 rider@1440 is@2000 very@2320
+26800|4399|different@0 from@239 one@479 street@639 to@960 the@1120 next,@1280
+28800|4240|the@0 small@319 steering@1040 corrections@1360 your@1760 hands@2160
+31199|3921|are@0 making@240 when@400 you@641 ride@880 slowly@1281 down@1441 a@1681
+33040|4720|hill@0 are@320 very@960 different@1199 from@1519 the@1760 tiny@1920
+35120|4800|ones@0 you@320 make@720 when@880 you@1040 ride@1279 fast.@1520 But@2400
+37760|4720|something@0 in@479 how@720 the@959 front@1440 wheel@1760
+39920|4799|is@0 mounted@400 turns@560 every@1280 lean@1760 into@2240
+42480|4399|a@0 gentle@480 turn@800 while@960 at@1680 the@1919 same@2160
+44719|5121|time@0 pushing@160 the@401 whole@1121 frame@1441 back@1840
+46879|5360|toward@0 standing@241 upright@481 again.@961 But@2241 if@2401 I@2641 asked@2721
+49840|5680|you,@0 hey,@399 go@800 ahead@1039 and@1280 write@1520 for@1760 me@1920 a@2160

@@ -1,0 +1,24 @@
+4220|1180|This is a bicycle.
+6060|4653|It has two thin wheels, a light frame and nothing at all to hold it up when it stands still,
+10713|3007|yet almost anyone can learn to ride one within a single afternoon.
+14340|2219|And I want you to pause for a second and notice how
+16559|2401|strange it is that staying balanced feels so effortless.
+19700|3262|I mean, a child, a courier and a racer all stay upright,
+22962|4251|even though speed, posture and road surface differ completely from one
+27213|1107|rider to the next.
+28900|4048|The tiny steering corrections that your hands are making when you
+32948|3992|ride slowly are very different from the ones you make when you ride fast.
+37520|5220|But something in the way the front wheel is mounted turns every small lean into
+42740|5100|a gentle turn, while at the same time the turn itself pushes the frame back toward
+47840|500|upright.
+49220|5414|But if I asked you, hey, go ahead and write for me a set of equations that takes in the
+54634|4501|lean angle and the speed and returns the exact steering input that is needed,
+59135|5610|predicting how the whole machine will respond, well the task goes from child's play to
+64745|1435|seriously hard.
+67160|3697|Unless you have never been near a road, I think I hardly need to argue for the usefulness
+70857|3783|and the sheer popularity of bicycles in cities today and in the years to come.
+75120|3830|But what I want to do here is show you what keeps a bicycle upright in the first place,
+78950|3306|assuming no background in physics, and to help you picture what it is doing,
+82256|2204|not as a magic trick but as a piece of mechanics.
+85020|3757|My hope is that you come away feeling like the design itself makes sense,
+88777|2684|and that you know what people mean when they say,
