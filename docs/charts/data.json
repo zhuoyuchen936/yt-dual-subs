@@ -1,0 +1,32 @@
+{
+  "note": "Measured 2026-09-20 on an Apple M5 Pro / 48 GB with LM Studio. Source: docs/model-comparison.md. Ratings are per-sentence judgements of one run (correct / flawed / wrong), made by reading each translation against its source, not an automatic metric.",
+  "models": [
+    { "id": "qwen3.6-35b-a3b", "kind": "通用 MoE 大模型", "memoryGB": 19, "secondsPer15": 3.0, "gpuSecPer100": 12.4 },
+    { "id": "hy-mt2-7b", "kind": "翻译专用", "memoryGB": 5.7, "secondsPer15": 3.0, "gpuSecPer100": 14.7 },
+    { "id": "hy-mt2-1.8b", "kind": "翻译专用", "memoryGB": 2.4, "secondsPer15": 0.9, "gpuSecPer100": 4.1 },
+    { "id": "milmmt-46-1b", "kind": "翻译专用，未采用", "memoryGB": 1.2, "secondsPer15": 0.9, "gpuSecPer100": null }
+  ],
+  "clips": [
+    { "title": "Git rebase explained", "rows": [
+      { "n": 1, "probe": "left off … a pretty messy branch", "ratings": "ok ok flawed wrong" },
+      { "n": 2, "probe": "clean it up before you push", "ratings": "ok ok ok wrong" },
+      { "n": 3, "probe": "not as scary as people make it sound", "ratings": "ok ok ok ok" },
+      { "n": 4, "probe": "run rebase with the interactive flag", "ratings": "ok ok ok flawed" },
+      { "n": 5, "probe": "squash these two into one", "ratings": "ok ok flawed wrong" },
+      { "n": 6, "probe": "If anything blows up … bail out", "ratings": "ok ok wrong flawed" }
+    ] },
+    { "title": "Weeknight fried rice", "rows": [
+      { "n": 7, "probe": "Day-old rice … turns to mush", "ratings": "ok ok flawed wrong" },
+      { "n": 8, "probe": "Get your pan ripping hot", "ratings": "ok ok ok ok" },
+      { "n": 9, "probe": "Push the rice to the side", "ratings": "ok ok flawed ok" },
+      { "n": 10, "probe": "crack two of these … into the middle", "ratings": "ok flawed wrong wrong" },
+      { "n": 11, "probe": "a quick toss … good to go", "ratings": "ok ok flawed flawed" }
+    ] },
+    { "title": "Why is the sky blue（无标点）", "rows": [
+      { "n": 12, "probe": "why … in the first place", "ratings": "flawed flawed flawed flawed" },
+      { "n": 13, "probe": "shorter wavelengths get scattered", "ratings": "ok ok ok flawed" },
+      { "n": 14, "probe": "sunsets end up looking red", "ratings": "ok flawed ok ok" },
+      { "n": 15, "probe": "blew my mind when i first learned it", "ratings": "ok ok ok wrong" }
+    ] }
+  ]
+}

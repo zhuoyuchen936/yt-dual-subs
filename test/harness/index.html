@@ -59,6 +59,19 @@
       const video = document.querySelector('video');
       video.src = URL.createObjectURL(new Blob([wav], { type: 'audio/wav' }));
       document.getElementById('toggle').onclick = () => (video.paused ? video.play() : video.pause());
+      // For screenshots: ?t=30 parks the playhead there, &lookup=word then clicks that word in the subtitle.
+      const startAt = Number(new URLSearchParams(location.search).get('t'));
+      const lookupWord = new URLSearchParams(location.search).get('lookup');
+      if (startAt) video.addEventListener('loadedmetadata', () => (video.currentTime = startAt), { once: true });
+      if (lookupWord) {
+        const timer = setInterval(() => {
+          const translated = document.querySelector('.yds-zh:not(.yds-wait)');
+          const word = [...document.querySelectorAll('.yds-w')].find((w) => w.textContent.toLowerCase().includes(lookupWord.toLowerCase()));
+          if (!translated || !translated.textContent || !word) return;
+          clearInterval(timer);
+          word.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        }, 300);
+      }
       setInterval(() => (document.getElementById('clock').textContent = video.currentTime.toFixed(1) + ' s' + (video.paused ? ' (paused)' : '')), 100);
       // The real player toggles playback when the player area is clicked; the overlay must not trigger it.
       window.__playerClicks = 0;

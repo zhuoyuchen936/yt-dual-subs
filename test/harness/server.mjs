@@ -9,7 +9,7 @@ import { manualJson3, asrJson3 } from '../helpers.mjs';
 
 const ROOT = path.resolve(new URL('../..', import.meta.url).pathname);
 const LLM = process.env.LLM_ORIGIN || 'http://localhost:1234';
-const TYPES = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.png': 'image/png', '.json': 'application/json' };
+const TYPES = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.png': 'image/png', '.json': 'application/json', '.svg': 'image/svg+xml' };
 
 http
   .createServer(async (req, res) => {

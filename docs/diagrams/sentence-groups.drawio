@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" version="26.0.0">
+  <diagram name="sentence-groups">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" page="0" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="text-2" value="&lt;b&gt;时间 →&lt;/b&gt;" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontFamily=Helvetica;fontSize=13;align=left;" vertex="1" parent="1"><mxGeometry x="40" y="40" width="110" height="30" as="geometry"/></mxCell>
+        <mxCell id="text-3" value="字幕片段 1" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontFamily=Helvetica;fontSize=13;fontColor=#666666;" vertex="1" parent="1"><mxGeometry x="170" y="40" width="260" height="30" as="geometry"/></mxCell>
+        <mxCell id="text-4" value="字幕片段 2" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontFamily=Helvetica;fontSize=13;fontColor=#666666;" vertex="1" parent="1"><mxGeometry x="450" y="40" width="260" height="30" as="geometry"/></mxCell>
+        <mxCell id="text-5" value="字幕片段 3" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontFamily=Helvetica;fontSize=13;fontColor=#666666;" vertex="1" parent="1"><mxGeometry x="730" y="40" width="260" height="30" as="geometry"/></mxCell>
+        <mxCell id="text-6" value="&lt;b&gt;英文&lt;/b&gt;&lt;br&gt;&lt;font color='#666666'&gt;跟着语音逐段显示&lt;/font&gt;" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontFamily=Helvetica;fontSize=13;align=left;" vertex="1" parent="1"><mxGeometry x="20" y="80" width="140" height="56" as="geometry"/></mxCell>
+        <mxCell id="en1-7" value="The small corrections your&lt;br&gt;hands make when you" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#ffffff;strokeColor=#999999;fontFamily=Helvetica;fontSize=13;" vertex="1" parent="1"><mxGeometry x="170" y="80" width="260" height="56" as="geometry"/></mxCell>
+        <mxCell id="en2-8" value="ride slowly are very different&lt;br&gt;from the ones" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#ffffff;strokeColor=#999999;fontFamily=Helvetica;fontSize=13;" vertex="1" parent="1"><mxGeometry x="450" y="80" width="260" height="56" as="geometry"/></mxCell>
+        <mxCell id="en3-9" value="you make when you&lt;br&gt;ride fast." style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#ffffff;strokeColor=#999999;fontFamily=Helvetica;fontSize=13;" vertex="1" parent="1"><mxGeometry x="730" y="80" width="260" height="56" as="geometry"/></mxCell>
+        <mxCell id="text-10" value="&lt;b&gt;逐条翻译&lt;/b&gt;（示意）&lt;br&gt;&lt;font color='#b85450'&gt;中文语序不同 → 错位&lt;/font&gt;" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontFamily=Helvetica;fontSize=13;align=left;" vertex="1" parent="1"><mxGeometry x="20" y="190" width="140" height="56" as="geometry"/></mxCell>
+        <mxCell id="bad1-11" value="当你" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#f8cecc;strokeColor=#b85450;fontFamily=Helvetica;fontSize=13;" vertex="1" parent="1"><mxGeometry x="170" y="190" width="260" height="56" as="geometry"/></mxCell>
+        <mxCell id="bad2-12" value="慢骑时，手上的细微修正与" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#f8cecc;strokeColor=#b85450;fontFamily=Helvetica;fontSize=13;" vertex="1" parent="1"><mxGeometry x="450" y="190" width="260" height="56" as="geometry"/></mxCell>
+        <mxCell id="bad3-13" value="快骑时的完全不同。" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#f8cecc;strokeColor=#b85450;fontFamily=Helvetica;fontSize=13;" vertex="1" parent="1"><mxGeometry x="730" y="190" width="260" height="56" as="geometry"/></mxCell>
+        <mxCell id="text-14" value="✗ 屏幕上是 “The small corrections…”，&lt;br&gt;中文却只有“当你”" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontFamily=Helvetica;fontSize=13;fontColor=#b85450;fontSize=12;" vertex="1" parent="1"><mxGeometry x="170" y="250" width="260" height="44" as="geometry"/></mxCell>
+        <mxCell id="text-15" value="&lt;b&gt;按整句翻译&lt;/b&gt;&lt;br&gt;&lt;font color='#4f7f3a'&gt;本项目的做法&lt;/font&gt;" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontFamily=Helvetica;fontSize=13;align=left;" vertex="1" parent="1"><mxGeometry x="20" y="340" width="140" height="56" as="geometry"/></mxCell>
+        <mxCell id="good-16" value="慢骑时你手上的细微修正，和快骑时的完全不同。" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#d5e8d4;strokeColor=#82b366;fontFamily=Helvetica;fontSize=13;" vertex="1" parent="1"><mxGeometry x="170" y="340" width="820" height="56" as="geometry"/></mxCell>
+        <mxCell id="text-17" value="✓ 一句只翻译一次，在它的三个片段期间一直显示" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontFamily=Helvetica;fontSize=13;fontColor=#4f7f3a;fontSize=12;" vertex="1" parent="1"><mxGeometry x="170" y="400" width="820" height="30" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
