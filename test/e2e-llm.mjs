@@ -17,7 +17,7 @@ await import('../src/segment.js');
 const call = (msg) => new Promise((resolve) => handler(msg, null, resolve));
 
 const st = await call({ type: 'status' });
-console.log('status:', st.connected ? `connected, model = ${st.active}` : `OFFLINE (${st.error})`);
+console.log('status:', st.connected ? `connected, model = ${st.active}, style = ${st.mt ? 'one sentence per request (translation model)' : 'numbered batch (general LLM)'}` : `OFFLINE (${st.error})`);
 if (!st.connected) process.exit(1);
 
 let failed = 0;

@@ -5,10 +5,14 @@
 
     // Local model server (OpenAI-compatible). LM Studio: http://localhost:1234/v1, Ollama: http://localhost:11434/v1
     apiBase: 'http://localhost:1234/v1',
-    model: '', // '' = auto-detect (prefer a model that is already loaded)
+    model: '', // '' = auto: whatever is loaded, else a dedicated translation model, else the first one
+    promptStyle: 'auto', // 'auto' | 'chat' (numbered batch, general LLMs) | 'mt' (one sentence per request, Hy-MT templates)
+    lookupModel: '', // '' = same model as translation (a translation model can only gloss the word in context)
     targetLang: '简体中文',
     batchSize: 12,
     extraPrompt: '',
+    lookaheadMin: 10, // only translate this far ahead of the playhead; 0 = the whole video at once
+    idleUnloadMin: 10, // ask LM Studio to unload the model after this long idle; 0 = never
 
     // Captions
     sourceLang: 'en',

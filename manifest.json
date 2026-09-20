@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "YT Dual Subs · 本地双语字幕",
   "description": "用本地大模型（LM Studio / Ollama）把 YouTube 英文字幕实时翻译成中文，中英对照学英语。",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "minimum_chrome_version": "111",
   "icons": {
     "16": "icons/icon16.png",

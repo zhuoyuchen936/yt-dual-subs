@@ -149,6 +149,15 @@
         background: var(--bg);
         font: 11px ui-monospace, monospace;
       }
+      .hint {
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .row select {
+        width: auto;
+        flex: none;
+      }
       .keys {
         display: grid;
         grid-template-columns: auto 1fr;
@@ -215,8 +224,21 @@
       <label class="field"><span>本地模型服务地址（OpenAI 兼容）</span><input type="text" data-key="apiBase" spellcheck="false" /></label>
       <label class="field">
         <span>模型</span>
-        <select data-key="model"><option value="">自动（优先已加载的模型）</option></select>
+        <select data-key="model"><option value="">自动（已加载的 → 翻译专用模型 → 第一个）</option></select>
       </label>
+      <label class="field">
+        <span>翻译方式</span>
+        <select data-key="promptStyle">
+          <option value="auto">自动（按模型名判断）</option>
+          <option value="chat">通用大模型：编号批量翻译</option>
+          <option value="mt">翻译专用模型：逐句翻译（Hy-MT 模板）</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>查词用的模型</span>
+        <select data-key="lookupModel"><option value="">与翻译相同</option></select>
+      </label>
+      <div class="hint">翻译专用模型查词只能给出“在本句中的译法”；想要音标和用法，就在这里选一个通用模型（用到时才加载）。</div>
       <label class="field"><span>目标语言</span><input type="text" data-key="targetLang" /></label>
       <label class="row" style="margin-top: 8px">
         <span>优先人工字幕<small>没有时才用自动生成的字幕</small></span>
@@ -227,6 +249,25 @@
         <input type="checkbox" data-key="mergeSentences" />
       </label>
       <label class="row"><span>每批句数</span><input type="range" min="4" max="24" step="1" data-key="batchSize" /></label>
+      <label class="row">
+        <span>提前翻译<small>只翻译播放位置之后这么久，省电、不白翻没看完的视频</small></span>
+        <select data-key="lookaheadMin" data-num>
+          <option value="5">5 分钟</option>
+          <option value="10">10 分钟</option>
+          <option value="20">20 分钟</option>
+          <option value="0">整个视频</option>
+        </select>
+      </label>
+      <label class="row">
+        <span>闲置后卸载模型<small>不看视频时把内存还给系统（LM Studio），再用时自动加载</small></span>
+        <select data-key="idleUnloadMin" data-num>
+          <option value="5">5 分钟</option>
+          <option value="10">10 分钟</option>
+          <option value="30">30 分钟</option>
+          <option value="60">1 小时</option>
+          <option value="0">不卸载</option>
+        </select>
+      </label>
       <label class="field">
         <span>给翻译的补充要求（可选）</span>
         <textarea data-key="extraPrompt" placeholder="例如：这是机器学习课程，术语按学界惯例翻译"></textarea>

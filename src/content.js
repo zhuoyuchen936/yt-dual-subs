@@ -137,7 +137,7 @@
       cues: null, // what is displayed (English)
       groups: null, // what is translated (whole sentences), see segment.js
       wordLevel: false,
-      phase: 'loading', // loading | translating | done | nocaps | error
+      phase: 'loading', // loading | translating | ahead (caught up with the lookahead window) | done | nocaps | error
       error: '',
       inflight: false,
       failStreak: 0,
@@ -226,14 +226,18 @@
 
   const needs = (g) => g.zh == null;
 
-  // Untranslated sentences starting at the playhead (so seeking re-prioritises), else anywhere.
+  // Untranslated sentences starting at the playhead (so seeking re-prioritises). With a lookahead
+  // window only the next few minutes are translated, which keeps the GPU idle most of the time and
+  // wastes nothing on videos that are not watched to the end; without one, the whole video is done.
   function nextBatch(s) {
     const v = videoEl();
-    const cueIdx = indexAt(s.cues, v ? v.currentTime : 0);
+    const t = v ? v.currentTime : 0;
+    const cueIdx = indexAt(s.cues, t);
     const from = cueIdx < 0 ? 0 : s.cues[cueIdx].g;
+    const horizon = settings.lookaheadMin > 0 ? t + settings.lookaheadMin * 60 : Infinity;
     let k = s.groups.findIndex((g, idx) => idx >= from && needs(g));
-    if (k < 0) k = s.groups.findIndex(needs);
-    if (k < 0) return [];
+    if (k < 0 && horizon === Infinity) k = s.groups.findIndex(needs);
+    if (k < 0 || s.groups[k].s > horizon) return [];
     // A small first batch gets something on screen quickly.
     const started = s.groups.some((g) => g.zh != null && !g.noSpeech);
     const size = started ? settings.batchSize : Math.min(5, settings.batchSize);
@@ -242,7 +246,7 @@
     let chars = 0;
     for (let j = k; j < s.groups.length && batch.length < size; j++) {
       const g = s.groups[j];
-      if (!needs(g)) break;
+      if (!needs(g) || g.s > horizon) break;
       if (batch.length && chars + g.en.length > maxChars) break;
       batch.push(g);
       chars += g.en.length;
@@ -256,7 +260,9 @@
     clearTimeout(s.retryTimer);
     const batch = nextBatch(s);
     if (!batch.length) {
-      if (s.phase !== 'done') setPhase(s, 'done');
+      // Nothing to do right now: either everything is translated, or we are far enough ahead.
+      const phase = s.groups.some(needs) ? 'ahead' : 'done';
+      if (s.phase !== phase) setPhase(s, phase);
       return;
     }
     s.inflight = true;
@@ -353,6 +359,7 @@
       const { done, total } = progress(s);
       setStatus(`翻译中 ${done}/${total}`);
     } else if (phase === 'done') setStatus('翻译完成 ✓', '', 2500);
+    else if (phase === 'ahead') setStatus('');
     else if (phase === 'nocaps') setStatus(message, 'warn', 6000);
     else if (phase === 'error') setStatus(message, 'error');
   }
@@ -643,6 +650,7 @@
     () => {
       if (selfSeek) selfSeek = false;
       else lastAutoPaused = -1;
+      pump();
     },
     true
   );
@@ -681,7 +689,7 @@
     const trackChanged = ['sourceLang', 'preferManual', 'mergeSentences'].some((k) => prev[k] !== settings[k]);
     if (trackChanged && session) endSession();
     checkNav();
-    if (session && session.phase === 'error') pump();
+    if (session && (session.phase === 'error' || session.phase === 'ahead' || session.phase === 'done')) pump();
   });
 
   // ---------------------------------------------------------------- boot
@@ -689,7 +697,11 @@
   (async () => {
     settings = await getSettings();
     document.addEventListener('yt-navigate-finish', checkNav);
-    setInterval(checkNav, 1000);
+    setInterval(() => {
+      checkNav();
+      // The lookahead window moves with the playhead: top it up as playback advances.
+      if (session && session.phase === 'ahead') pump();
+    }, 1000);
     checkNav();
     requestAnimationFrame(loop);
   })();

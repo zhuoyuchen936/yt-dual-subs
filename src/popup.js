@@ -47,7 +47,7 @@ async function onChange(e) {
   if (!key) return;
   let value;
   if (input.type === 'checkbox') value = input.checked;
-  else if (input.type === 'range') value = Number(input.value);
+  else if (input.type === 'range' || 'num' in input.dataset) value = Number(input.value);
   else value = input.value.trim();
 
   if (key === 'apiBase') {
@@ -58,7 +58,7 @@ async function onChange(e) {
     }
   }
   settings = await saveSettings({ [key]: value });
-  if (key === 'apiBase' || key === 'model') refreshServer();
+  if (key === 'apiBase' || key === 'model' || key === 'promptStyle') refreshServer();
 }
 
 // ---- status ----
@@ -74,25 +74,27 @@ async function refreshServer() {
     node.append('连不上本地模型服务 — 在 LM Studio 的 Developer 页打开 Server，或运行 lms server start');
     return;
   }
-  node.append(`已连接 · ${st.active || '没有可用模型'}`);
+  node.append(`已连接 · ${st.active || '没有可用模型'}${st.active ? (st.mt ? ' · 逐句翻译' : ' · 批量翻译') : ''}`);
 
-  const select = $('select[data-key="model"]');
-  while (select.options.length > 1) select.remove(1);
-  for (const m of st.models) {
-    const opt = document.createElement('option');
-    opt.value = m.id;
-    opt.textContent = m.id + (m.loaded ? '（已加载）' : '');
-    select.append(opt);
+  for (const key of ['model', 'lookupModel']) {
+    const select = $(`select[data-key="${key}"]`);
+    while (select.options.length > 1) select.remove(1);
+    for (const m of st.models) {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.id + (m.loaded ? '（已加载）' : '');
+      select.append(opt);
+    }
+    if (settings[key] && !st.models.some((m) => m.id === settings[key])) {
+      const opt = document.createElement('option');
+      opt.value = opt.textContent = settings[key];
+      select.append(opt);
+    }
+    select.value = settings[key];
   }
-  if (settings.model && !st.models.some((m) => m.id === settings.model)) {
-    const opt = document.createElement('option');
-    opt.value = opt.textContent = settings.model;
-    select.append(opt);
-  }
-  select.value = settings.model;
 }
 
-const PHASES = { loading: '正在获取字幕…', translating: '翻译中', done: '翻译完成', nocaps: '', error: '' };
+const PHASES = { loading: '正在获取字幕…', translating: '翻译中', ahead: '已翻译到前面，随播放继续', done: '翻译完成', nocaps: '', error: '' };
 
 async function refreshVideo() {
   const st = await sendToTab({ type: 'getStatus' });

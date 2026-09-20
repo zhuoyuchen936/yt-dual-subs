@@ -2,7 +2,8 @@
 // http://localhost are covered by host_permissions and never hit CORS / mixed-content checks.
 importScripts('defaults.js', 'translate-core.js');
 
-const { getSettings, buildTranslatePrompt, parseNumbered } = globalThis.YDS;
+const { getSettings, buildTranslatePrompt, parseNumbered, isMtModel, MT_SAMPLING, buildMtPrompt, buildMtLookupPrompt, cleanMtOutput } =
+  globalThis.YDS;
 
 // ---- model discovery ----
 
@@ -25,13 +26,17 @@ async function listModels(apiBase) {
   return (j.data || []).filter((m) => !/embed/i.test(m.id)).map((m) => ({ id: m.id, loaded: false }));
 }
 
+// Whatever is already in memory costs nothing extra; otherwise a small translation model beats
+// loading a general-purpose one.
+const autoPick = (models) => models.find((m) => m.loaded) || models.find((m) => isMtModel(m.id)) || models[0];
+
 async function resolveModel(settings) {
   if (settings.model) return settings.model;
   const key = settings.apiBase;
   if (modelCache.key === key && modelCache.id && Date.now() - modelCache.ts < 60000) return modelCache.id;
   const models = await listModels(settings.apiBase);
   if (!models.length) throw new Error('本地服务里没有可用的模型');
-  const pick = models.find((m) => m.loaded) || models[0];
+  const pick = autoPick(models);
   modelCache = { key, id: pick.id, ts: Date.now() };
   return pick.id;
 }
@@ -40,26 +45,21 @@ async function resolveModel(settings) {
 
 let reasoningParamRejected = false;
 
-async function chat(settings, messages, maxTokens) {
-  const model = await resolveModel(settings);
+async function chat(settings, model, messages, maxTokens, sampling) {
   const url = `${settings.apiBase.replace(/\/$/, '')}/chat/completions`;
-  const body = { model, messages, temperature: 0.2, max_tokens: maxTokens, stream: true };
+  const body = { model, messages, max_tokens: maxTokens, stream: true, ...(sampling || { temperature: 0.2 }) };
   // Hybrid "thinking" models (Qwen3 etc.) would otherwise reason for 1000+ tokens per batch.
-  if (!reasoningParamRejected) body.reasoning_effort = 'none';
+  if (!sampling && !reasoningParamRejected) body.reasoning_effort = 'none';
+  // LM Studio: unload the model once it has been idle this long, so it stops holding memory after
+  // you stop watching. (It reloads on demand; other servers ignore the field.)
+  if (settings.idleUnloadMin > 0) body.ttl = Math.round(settings.idleUnloadMin * 60);
 
-  let res = await fetch(url, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body)
-  });
+  const post = () => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  let res = await post();
   if (res.status === 400 && body.reasoning_effort) {
     reasoningParamRejected = true;
     delete body.reasoning_effort;
-    res = await fetch(url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+    res = await post();
   }
   if (!res.ok) {
     const text = await res.text().catch(() => '');
@@ -93,15 +93,43 @@ async function chat(settings, messages, maxTokens) {
   if (!content && sawReasoning) {
     throw new Error('模型一直在“思考”没有输出，请在 LM Studio 里关闭该模型的 thinking，或换一个模型');
   }
-  return { content, model };
+  return content;
 }
 
 // ---- translation ----
 
+const usesMtPrompts = (settings, model) => (settings.promptStyle === 'auto' ? isMtModel(model) : settings.promptStyle === 'mt');
+
+// One sentence per request, a few in flight at once (LM Studio serves them in parallel slots).
+const MT_CONCURRENCY = 4;
+
+async function translateMt(settings, model, req) {
+  const zh = new Array(req.lines.length).fill(null);
+  let next = 0;
+  let firstError = null;
+  const worker = async () => {
+    while (next < req.lines.length) {
+      const k = next++;
+      const context = [...(req.before || []), ...req.lines.slice(0, k)].slice(-2);
+      const messages = buildMtPrompt(settings, { title: req.title, context, text: req.lines[k] });
+      try {
+        zh[k] = cleanMtOutput(await chat(settings, model, messages, 200 + req.lines[k].length * 2, MT_SAMPLING)) || null;
+      } catch (e) {
+        firstError = firstError || e;
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(MT_CONCURRENCY, req.lines.length) }, worker));
+  if (firstError && zh.every((z) => z == null)) throw firstError;
+  return zh;
+}
+
 async function translate(req) {
   const settings = await getSettings();
+  const model = await resolveModel(settings);
+  if (usesMtPrompts(settings, model)) return { zh: await translateMt(settings, model, req), model };
   const chars = req.lines.reduce((a, l) => a + l.length, 0);
-  const { content, model } = await chat(settings, buildTranslatePrompt(settings, req), 300 + chars * 2);
+  const content = await chat(settings, model, buildTranslatePrompt(settings, req), 300 + chars * 2);
   return { zh: parseNumbered(content, req.lines.length), model };
 }
 
@@ -109,6 +137,12 @@ async function translate(req) {
 
 async function lookup(req) {
   const settings = await getSettings();
+  const model = settings.lookupModel || (await resolveModel(settings));
+  // A lookup model picked by hand is judged by its name; promptStyle only describes the translation model.
+  if (usesMtPrompts(settings.lookupModel ? { promptStyle: 'auto' } : settings, model)) {
+    const zh = cleanMtOutput(await chat(settings, model, buildMtLookupPrompt(settings, req), 120, MT_SAMPLING));
+    return { text: `在本句中：${zh}`, brief: true };
+  }
   const system = [
     `你是英语学习助手。用户正在看英文视频学英语，会给出一个单词或短语，以及它所在的句子。`,
     `请用${settings.targetLang}简明回答，严格按下面三行的格式，不要客套话：`,
@@ -117,8 +151,9 @@ async function lookup(req) {
     `一个常见搭配或用法提示（附简短英文例子）`
   ].join('\n');
   const user = `单词/短语：${req.text}\n所在句子：${req.sentence}`;
-  const { content } = await chat(
+  const content = await chat(
     settings,
+    model,
     [
       { role: 'system', content: system },
       { role: 'user', content: user }
@@ -134,9 +169,8 @@ async function serverStatus() {
   const settings = await getSettings();
   try {
     const models = await listModels(settings.apiBase);
-    let active = settings.model;
-    if (!active) active = (models.find((m) => m.loaded) || models[0] || {}).id || '';
-    return { connected: true, models, active };
+    const active = settings.model || (autoPick(models) || {}).id || '';
+    return { connected: true, models, active, mt: usesMtPrompts(settings, active) };
   } catch (e) {
     return { connected: false, error: String(e.message || e), models: [], active: '' };
   }

@@ -29,11 +29,15 @@ YouTube 播放器 ──请求字幕──▶ /api/timedtext?…&pot=令牌
 
 ## 安装
 
-1. 启动本地模型服务（任选其一）：
+1. 准备模型和本地服务：
    ```bash
-   ./scripts/start-llm.sh
+   lms get "https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF@q8_0"
    ```
-   或在 LM Studio 的 Developer 页打开 **Start server**。默认地址 `http://localhost:1234/v1`。
+   ```bash
+   lms server start
+   ```
+   （Hugging Face 慢的话，同一份文件在[魔搭](https://modelscope.cn/models/Tencent-Hunyuan/Hy-MT2-1.8B-GGUF)也有，下载后放到 `~/.lmstudio/models/tencent/Hy-MT2-1.8B-GGUF/`。）
+   服务开着就行，不用手动加载模型：扩展第一次请求时 LM Studio 会按需加载（Hy-MT2-1.8B 约 1 秒），闲置后自动卸载。默认地址 `http://localhost:1234/v1`。
 2. Chrome 打开 `chrome://extensions` → 右上角开启**开发者模式** → **加载已解压的扩展程序** → 选择本目录 `yt-dual-subs`。
 3. 打开（或刷新）一个 YouTube 视频。左上角会出现「翻译中 n/m」，字幕随即显示。
 
@@ -41,12 +45,27 @@ YouTube 播放器 ──请求字幕──▶ /api/timedtext?…&pot=令牌
 
 ### 模型建议
 
-| 模型 | 说明 |
-| --- | --- |
-| `qwen/qwen3.6-35b-a3b`（默认自动选中） | MoE，只激活 3B，M5 Pro 上约 90 tok/s：10 句 ≈ 3 秒，查词 ≈ 0.6 秒 |
-| `qwen/qwen3.8-27b` | 稠密模型，每个 token 都要过全部 27B 参数，会明显更慢（未实测）；可在设置里切换对比 |
+下表是同一批字幕在 M5 Pro 上的实测：
 
-扩展会发送 `reasoning_effort: "none"` 关闭思考模式（否则每批要先"想" 1000+ token）。
+| 模型 | 占用内存 | 10 句耗时 | 说明 |
+| --- | --- | --- | --- |
+| [`hy-mt2-1.8b`](https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF)（Q8_0，**推荐**） | 约 2.4 GB | 1.2 秒 | 腾讯的翻译专用模型（Apache-2.0）。逐句请求、4 路并发，天然不会错位。译文准确，偶尔不如大模型地道。查词只能给出"在本句中的译法" |
+| `qwen/qwen3.6-35b-a3b`（MLX 4bit） | 约 19 GB | 3.8 秒 | 通用 MoE 模型，译文最自然；查词能给音标、词性、用法 |
+
+自动选择的顺序：已经加载在内存里的模型 → 名字像翻译专用模型的（`hy-mt` / `hunyuan-mt`）→ 列表里第一个。也可以在设置里指定。
+
+两类模型的用法不同，扩展按模型名自动切换（也可在「翻译方式」里手动指定）：
+
+- **通用大模型**：一批句子编号后一次翻译，带系统提示词；发送 `reasoning_effort: "none"` 关闭思考模式（否则每批要先"想" 1000+ token）。
+- **翻译专用模型**：这类小模型只在少数几种提示词格式上训练过，也没有系统提示词。所以用官方的「背景信息 + 待翻译文本」模板，一次一句，把视频标题和前两句作为背景；采样参数用官方推荐值。
+
+想两头兼顾：翻译用 `hy-mt2-1.8b`，「查词用的模型」选一个通用模型——只有点词时才会把它加载进来，闲置后又会卸载。
+
+### 降低硬件压力
+
+- **提前翻译**（默认 10 分钟）：只翻译播放位置之后的一小段，随播放补充。GPU 绝大部分时间空闲，没看完的视频也不白翻。选「整个视频」则一口气翻完。
+- **闲置后卸载模型**（默认 10 分钟）：请求里带 `ttl`，LM Studio 在停止看视频后把内存还给系统。
+- 翻过的句子有缓存，重看不再占用模型。
 用 Ollama 时把服务地址改成 `http://localhost:11434/v1`，并设置环境变量 `OLLAMA_ORIGINS=chrome-extension://*`。
 
 ## 学习功能

@@ -39,5 +39,49 @@
     return out;
   }
 
-  globalThis.YDS = Object.assign(globalThis.YDS || {}, { buildTranslatePrompt, parseNumbered });
+  // ---- dedicated translation models (Tencent Hy-MT / Hunyuan-MT family) ----
+  //
+  // These are tiny (1.8B) and fast, but only trained on a handful of prompt shapes and with no system
+  // prompt, so they get one sentence per request in the vendor's own templates. That also makes
+  // misalignment impossible by construction: one request, one sentence, one translation.
+
+  const isMtModel = (id) => /hy-?mt|hunyuan-?mt/i.test(String(id || ''));
+
+  // The vendor's recommended sampling (llama.cpp / LM Studio parameter names).
+  const MT_SAMPLING = { temperature: 0.7, top_p: 0.6, top_k: 20, repeat_penalty: 1.05 };
+
+  // "Structured Data 2" template from the model card: background information + source text.
+  function buildMtPrompt(settings, { title, context, text }) {
+    const background = [];
+    if (title) background.push(`视频标题：${title}`);
+    for (const line of context || []) background.push(`上文：${line}`);
+    if (settings.extraPrompt) background.push(`翻译要求：${settings.extraPrompt}`);
+    const content = background.length
+      ? `【背景信息】\n${background.join('\n')}\n\n请结合背景信息将以下文本翻译为${settings.targetLang}。\n\n【待翻译文本】\n${text}`
+      : `将以下文本翻译为${settings.targetLang}，注意只需要输出翻译后的结果，不要额外解释：\n\n${text}`;
+    return [{ role: 'user', content }];
+  }
+
+  // A translation model cannot explain a word, but it can translate it in the context of its sentence.
+  function buildMtLookupPrompt(settings, { text, sentence }) {
+    const content = `【背景信息】\n${sentence}\n\n请结合背景信息将以下文本翻译为${settings.targetLang}。\n\n【待翻译文本】\n${text}`;
+    return [{ role: 'user', content }];
+  }
+
+  function cleanMtOutput(text) {
+    return String(text || '')
+      .replace(/^【?(译文|翻译结果|翻译)】?[:：]\s*/, '')
+      .replace(/\s*\n+\s*/g, ' ')
+      .trim();
+  }
+
+  globalThis.YDS = Object.assign(globalThis.YDS || {}, {
+    buildTranslatePrompt,
+    parseNumbered,
+    isMtModel,
+    MT_SAMPLING,
+    buildMtPrompt,
+    buildMtLookupPrompt,
+    cleanMtOutput
+  });
 })();

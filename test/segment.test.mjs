@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { manualJson3, asrJson3 } from './helpers.mjs';
 await import('../src/segment.js');
 await import('../src/translate-core.js');
-const { parseJson3, indexAt, parseNumbered, buildTranslatePrompt } = globalThis.YDS;
+const { parseJson3, indexAt, parseNumbered, buildTranslatePrompt, isMtModel, buildMtPrompt, buildMtLookupPrompt, cleanMtOutput } = globalThis.YDS;
 
 const checkTimeline = (cues) => {
   cues.forEach((c, k) => {
@@ -105,4 +105,30 @@ test('buildTranslatePrompt numbers the lines and separates context', () => {
   assert.match(user.content, /【前文/);
   assert.doesNotMatch(user.content, /【后文/);
   assert.match(user.content, /1\. a\n2\. b$/);
+});
+
+test('dedicated translation models are recognised by name', () => {
+  for (const id of ['hy-mt2-1.8b', 'tencent/Hy-MT2-7B-GGUF', 'HY-MT1.5-1.8B', 'hunyuan-mt-7b']) assert.ok(isMtModel(id), id);
+  for (const id of ['qwen/qwen3.6-35b-a3b', 'gemma-3-4b', '', undefined]) assert.ok(!isMtModel(id), String(id));
+});
+
+test('translation-model prompts: one user message in the vendor template, no system prompt', () => {
+  const settings = { targetLang: '简体中文', extraPrompt: '' };
+  const withContext = buildMtPrompt(settings, { title: 'T', context: ['first.', 'second.'], text: 'third.' });
+  assert.equal(withContext.length, 1);
+  assert.equal(withContext[0].role, 'user');
+  assert.equal(
+    withContext[0].content,
+    '【背景信息】\n视频标题：T\n上文：first.\n上文：second.\n\n请结合背景信息将以下文本翻译为简体中文。\n\n【待翻译文本】\nthird.'
+  );
+  const bare = buildMtPrompt(settings, { title: '', context: [], text: 'hello' });
+  assert.equal(bare[0].content, '将以下文本翻译为简体中文，注意只需要输出翻译后的结果，不要额外解释：\n\nhello');
+  assert.match(buildMtPrompt({ ...settings, extraPrompt: '术语保留英文' }, { text: 'x' })[0].content, /翻译要求：术语保留英文/);
+  assert.match(buildMtLookupPrompt(settings, { text: 'frame', sentence: 'A light frame.' })[0].content, /^【背景信息】\nA light frame\.\n[\s\S]*【待翻译文本】\nframe$/);
+});
+
+test('cleanMtOutput flattens the reply to one subtitle line', () => {
+  assert.equal(cleanMtOutput(' 这是一辆\n自行车。 \n'), '这是一辆 自行车。');
+  assert.equal(cleanMtOutput('译文：你好'), '你好');
+  assert.equal(cleanMtOutput(null), '');
 });

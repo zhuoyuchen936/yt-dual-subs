@@ -1,6 +1,8 @@
 // Minimal in-page stand-in for the extension APIs the sources use.
 (() => {
-  const store = { settings: { apiBase: location.origin + '/llm/v1' } };
+  // Settings can be overridden from the URL: /watch?v=x&settings={"lookaheadMin":0.5}
+  const overrides = JSON.parse(new URLSearchParams(location.search).get('settings') || '{}');
+  const store = { settings: { apiBase: location.origin + '/llm/v1', ...overrides } };
   const storageListeners = [];
   const messageListeners = [];
   window.__store = store;
